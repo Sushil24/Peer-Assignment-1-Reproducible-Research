@@ -1,0 +1,96 @@
+Peer-graded Assignment: Course Project 1
+============================================
+```{r echo=FALSE}
+## getting and cleaninh data
+main<-read.csv("activity.csv")
+main1<- complete.cases(main)
+main<- main[main1,]
+main$date<- as.character(main$date)
+main$date<- as.Date(main$date)
+```
+
+Total number of steps taken per day 
+```{r}
+Total_per_day<- tapply(main$steps,main$date,sum)
+Total_per_day<- as.data.frame.table(Total_per_day)
+colnames(Total_per_day)<- c("Date","Sum")
+hist(Total_per_day$Sum, main = "Histogram of Total number of steps taken per day")
+mean1<- mean(Total_per_day$Sum)
+median<- median(Total_per_day$Sum)
+```
+
+The mean of the total steps taken per day is `r mean1`
+The median of the total steps taken perday is `r median`
+
+
+Average Daily activity pattern 
+
+```{r}
+library(ggplot2)
+step_per_interval<- tapply(main$steps,main$interval,mean)
+step_per_interval<- as.data.frame.table(step_per_interval)
+colnames(step_per_interval)<- c("Interval", "Average.steps")
+ggplot(data = step_per_interval, aes(x = Interval,y = Average.steps, group=1))+geom_line()
+max<-step_per_interval$Interval[(which.max(step_per_interval$Average.steps))]
+
+```
+The 5 minute interval across all days which has maximum steps is `r max`
+
+Imputing Missing Values
+
+```{r}
+main<-read.csv("activity.csv")
+main$date<- as.character(main$date)
+main$date<- as.Date(main$date)
+missing_number<- length(which(is.na(main$steps)))
+```
+The total number of missing values is `r missing_number`
+
+Replacing of missing data by the mean of the existing set
+```{r}
+## replacing missing values
+missing_data<- which(is.na(main$steps))
+missing_vector<- rep(mean(main$steps, na.rm= TRUE), times= length(missing_data))
+main[missing_data,"steps"]<- missing_vector
+```
+Plotting Histogram with NA values replaced by mean values
+
+```{r}
+New_Total_per_day<- tapply(main$steps,main$date,sum)
+New_Total_per_day<- as.data.frame.table(New_Total_per_day)
+colnames(New_Total_per_day)<- c("Date","Sum")
+hist(New_Total_per_day$Sum, main="Histogram of total number of steps taken", xlab = "Total number of steps", ylab = "Frequency" )
+```
+
+```{r}
+New_mean<- mean(New_Total_per_day$Sum)
+New_median<- median(New_Total_per_day$Sum)
+Difference_mean<- New_mean-mean1
+Difference_median<- New_median-median
+```
+The difference in mean is `r Difference_mean`
+The difference in median is `r Difference_median`
+
+Clearly difference in the mean is zero because missing values have been replaced by mean
+
+Activity difference between weekdays and weekends
+
+```{r}
+main$days<-weekdays(main$date)
+temp<- which(main$days=="Saturday"|main$days=="Sunday")
+main$weekday<-c("Weekdays")
+main$weekday[temp]<-c("Weekends")
+main$days<- as.factor(main$days)
+main$weekday<- as.factor(main$weekday)
+temp_weekdays<- which(main$weekday=="Weekdays")
+main_weekdays<- main[temp_weekdays,]
+temp_weekdays<- which(main$weekday=="Weekdays")
+main_weekdays<- main[temp_weekdays,]
+temp_weekends<- which(main$weekday=="Weekends")
+main_weekends<- main[temp_weekends,]
+library(ggplot2)
+main_weekdays$interval<-as.factor(main_weekdays$interval)
+main_days<- aggregate(steps ~ weekday+interval,main,mean)
+ggplot(main_days,aes(x=interval, y= steps))+geom_line()+facet_grid(weekday~.)
+```
+
